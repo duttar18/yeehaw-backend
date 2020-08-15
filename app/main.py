@@ -3,7 +3,8 @@ import json
 import flask
 import flask_cors
 import flask_sqlalchemy
-import datetime
+import time
+from datetime import datetime
 
 from flask import Flask, request, jsonify, session,make_response, current_app, render_template, json
 from flask_cors import CORS, cross_origin
@@ -22,6 +23,7 @@ app.config.from_object(__name__)
 
 app.config['SECRET_KEY'] = 'yosafdyousfodjasodkj'
 app.config['CORS_HEADERS'] = 'Content-Type'
+db = SQLAlchemy(app)
 cors = CORS(app)
 
 class Players(db.Model):
@@ -34,8 +36,8 @@ class Games(db.Model):
     id = db.Column(db.Integer,primary_key=True, autoincrement=True)
     id1 = db.Column(db.Integer)
     id2 = db.Column(db.Integer)
-    time1 = db.Column(db.Integer)
-    time2 = db.Column(db.Integer)
+    time1 = db.Column(db.Float,default=0)
+    time2 = db.Column(db.Float,default=0)
     waittime = db.Column(db.Integer)
     live = db.Column(db.Boolean,default=True)
 
@@ -43,8 +45,9 @@ class Games(db.Model):
         self.id1=id1
         self.waittime=random.randint(1000,5000)
 
-@app.route('/find',methods=["POST"])
-
+@app.route('/finding',methods=["POST"])
+@cross_origin()
+def finding():
     body = flask.request.get_json()
     game = Games.query.filter_by(id2=None).first()
     otherid = 0
@@ -71,15 +74,78 @@ class Games(db.Model):
     player = Players.query.filter_by(id=body["id"]).first()
 
     return flask.jsonify(
-        player = player.money
-        player2Money = otherplayer.money
-        player2Name = otherplayer.name
+        player = player.money,
+        player2Money = otherplayer.money,
+        player2Name = otherplayer.name,
         waittime = game.waittime
     )
 
-@app.route('/finding',methods=["POST"])
-def finding():
+@app.route('/deathmatch',methods=["POST"])
+@cross_origin()
+def deathmatch():
     body = flask.request.get_json()
+
+    game = Games.query.filter_by((Games.id1==body["id"]) | (Games.id2==body["id"]) ,live=True)
+
+    if game.id1==body['id']:
+        game.time1=body["time"]
+    else:
+        game.time2=body["time"]
+    db.session.commit()
+
+
+
+    # wait till both sides respond
+    start = datetime.now()
+    while (not (game.time1 and game.time2)) and ((datetime.now()-start).total_seconds()<2):
+        db.session.refresh()
+        game = Games.query.filter_by((Games.id1==body["id"]) | (Games.id2==body["id"]) ,live=True)
+        if game.time1 and game.time2:
+            game.live=False
+        time.sleep(0.25)
+    game.live=False
+    db.session.commit()
+    
+    # figure out who won
+    won = True
+    if game.id1==body['id']:
+        if game.time2 and game.time2<game.time1:
+            won=False
+    else:
+        if game.time1 and game.time1<game.time2:
+            won=False
+
+
+    player2Time = 0
+    enemyId = 0
+    if game.id1==body['id']:
+        player2Time=game.time2
+        enemyId=game.id2
+    else:
+        player2Time=game.time1
+        enemyId=game.id1
+    
+    player = Players.query.filter_by(id=body["id"])
+    enemy = Players.query.filter_by(id=enemyId)
+    
+    if won:
+        money = int(enemy.money*0.1)
+
+        player.money += money
+        enemy.money -=money
+    else:
+        money = int(player.money*0.1)
+
+        enemy.money += money
+        player.money -= money
+    db.session.commit()
+
+    return flask.jsonify(
+        won=won,
+        player2Time = player2Time,
+        money=player.money,
+        player2Money=enemy.money
+    )
 
 @app.route("/createPlayer",methods=["POST"]) 
 @cross_origin()
