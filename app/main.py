@@ -4,6 +4,7 @@ import flask
 import flask_cors
 import flask_sqlalchemy
 import time
+import random
 from datetime import datetime
 
 from flask import Flask, request, jsonify, session,make_response, current_app, render_template, json
@@ -74,10 +75,11 @@ def finding():
     player = Players.query.filter_by(id=body["id"]).first()
 
     return flask.jsonify(
-        player = player.money,
+        playerMoney = player.money,
         player2Money = otherplayer.money,
         player2Name = otherplayer.name,
-        waittime = game.waittime
+        waittime = game.waittime,
+        gameId = game.id
     )
 
 @app.route('/deathmatch',methods=["POST"])
@@ -85,7 +87,7 @@ def finding():
 def deathmatch():
     body = flask.request.get_json()
 
-    game = Games.query.filter_by((Games.id1==body["id"]) | (Games.id2==body["id"]) ,live=True)
+    game = Games.query.filter_by(body["gameId"])
 
     if game.id1==body['id']:
         game.time1=body["time"]
@@ -99,7 +101,7 @@ def deathmatch():
     start = datetime.now()
     while (not (game.time1 and game.time2)) and ((datetime.now()-start).total_seconds()<2):
         db.session.refresh()
-        game = Games.query.filter_by((Games.id1==body["id"]) | (Games.id2==body["id"]) ,live=True)
+        game = Games.query.filter_by(body["gameId"])
         if game.time1 and game.time2:
             game.live=False
         time.sleep(0.25)
