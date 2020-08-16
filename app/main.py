@@ -51,7 +51,7 @@ class Games(db.Model):
 @cross_origin()
 def user():
     body = flask.request.get_json()
-    user = Users.query.filter_by(id=body["id"])
+    user = Players.query.filter_by(id=body["id"])
     if 'name' in body:
         user.name = body['name']
     if 'gender' in body:
