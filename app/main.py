@@ -88,7 +88,7 @@ def finding():
 def deathmatch():
     body = flask.request.get_json()
 
-    game = Games.query.filter_by(body["gameId"])
+    game = Games.query.filter_by(id=body["gameId"]).first()
 
     if game.id1==body['id']:
         game.time1=body["time"]
@@ -101,8 +101,8 @@ def deathmatch():
     # wait till both sides respond
     start = datetime.now()
     while (not (game.time1 and game.time2)) and ((datetime.now()-start).total_seconds()<2):
-        db.session.refresh()
-        game = Games.query.filter_by(body["gameId"])
+        db.session.refresh(game)
+        game = Games.query.filter_by(id=body["gameId"]).first()
         if game.time1 and game.time2:
             game.live=False
         time.sleep(0.25)
@@ -118,7 +118,6 @@ def deathmatch():
         if game.time1 and game.time1<game.time2:
             won=False
 
-
     player2Time = 0
     enemyId = 0
     if game.id1==body['id']:
@@ -128,8 +127,8 @@ def deathmatch():
         player2Time=game.time1
         enemyId=game.id1
     
-    player = Players.query.filter_by(id=body["id"])
-    enemy = Players.query.filter_by(id=enemyId)
+    player = Players.query.filter_by(id=body["id"]).first()
+    enemy = Players.query.filter_by(id=enemyId).first()
     
     if won:
         money = int(enemy.money*0.1)
