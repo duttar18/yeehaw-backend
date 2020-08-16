@@ -56,6 +56,7 @@ def user():
         user.name = body['name']
     if 'gender' in body:
         user.gender = body['gender']
+    db.commit()
     return flask.jsonify(
         name = user.name,
         gender = user.gender
