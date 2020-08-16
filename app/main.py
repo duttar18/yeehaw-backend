@@ -58,9 +58,10 @@ def finding():
         game = Games(body["id"])
         db.session.add(game)
         db.session.commit()
+        id=game.id
         while not game.id2:
-            db.session.refresh() # change if time
-            game = Games.query.filter_by(id1=body["id"],live=True).filter(Games.id2!=None).first()
+            db.session.refresh(game) # change if time
+            game = Games.query.filter_by(id=id).first()
         otherid=game.id2
     
     # if you find a game
