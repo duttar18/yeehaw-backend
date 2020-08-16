@@ -31,7 +31,7 @@ class Players(db.Model):
     id = db.Column(db.Integer,primary_key=True, autoincrement=True)
     name = db.Column(db.String(100))
     money = db.Column(db.Integer, default=50)
-    gender = db.Column(db.String(1))
+    gender = db.Column(db.String(1), default="M")
     def __init__(self,name):
         self.name=name
 class Games(db.Model):
