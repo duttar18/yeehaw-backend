@@ -31,6 +31,7 @@ class Players(db.Model):
     id = db.Column(db.Integer,primary_key=True, autoincrement=True)
     name = db.Column(db.String(100))
     money = db.Column(db.Integer, default=50)
+    gender = db.Column(db.String(1))
     def __init__(self,name):
         self.name=name
 class Games(db.Model):
@@ -45,6 +46,21 @@ class Games(db.Model):
     def __init__(self,id1):
         self.id1=id1
         self.waittime=random.randint(1000,5000)
+
+@app.route('/user',methods=["POST"])
+@cross_origin()
+def user():
+    body = flask.request.get_json()
+    user = Users.query.filter_by(id=body["id"])
+    if 'name' in body:
+        user.name = body['name']
+    if 'gender' in body:
+        user.gender = body['gender']
+    return flask.jsonify(
+        name = user.name,
+        gender = user.gender
+    )
+
 
 @app.route('/finding',methods=["POST"])
 @cross_origin()
@@ -79,6 +95,9 @@ def finding():
         playerMoney = player.money,
         player2Money = otherplayer.money,
         player2Name = otherplayer.name,
+        player2Gender = otherplayer.gender,
+        name = player.name,
+        gender = player.gender,
         waittime = game.waittime,
         gameId = game.id
     )
